@@ -2,16 +2,16 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-# 1. ตั้งค่าหน้าจอแดชบอร์ดแล็บแบบกว้างเต็มหน้าจอ
+# 1. ตั้งค่าหน้าจอแดชบอร์ดแล็บแบบกว้างเต็มหน้าจอ (ต้องอยู่บนสุดเสมอ)
 st.set_page_config(page_title="IQC Lab Dashboard 2026", layout="wide")
-st.title("📊 ระบบ IQC Analytics & Westgard Multi-rule Dashboard (ระบบเต็ม 7 ข้อ)")
+st.title("📊 ระบบ IQC Analytics & Westgard Multi-rule Dashboard")
 st.markdown("---")
 
-# 2. ตัวแปรฐานข้อมูลหลัก
+# 2. ตัวแปรฐานข้อมูลหลักและการเชื่อมต่อข้อมูล
 SHEET_ID = "16maoziMQKJiFtn-Rkzj_ZD7SZ7MqUBRcCj8MmYuwhxM"
 BASE_GITHUB_URL = "https://raw.githubusercontent.com/soysaena2013-creator/IQC_Dashboard_2026/main/"
 
-# 3. คำสั่งสร้างแท็บเมนู 7 ข้อ
+# 3. คำสั่งสร้างแท็บเมนู 7 ข้อ (แก้ไขปัญหาระบบหาแท็บไม่เจอเด็ดขาด)
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "1. กราฟ Levey-Jennings (Real-time)",
     "2. สรุปเปอร์เซ็นต์ผ่านเกณฑ์ (% Passing)",
@@ -28,6 +28,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 with tab1:
     st.header("📈 1. แผนภูมิวิเคราะห์ Levey-Jennings Real-time")
     try:
+        # ฟังก์ชันดึงไฟล์ CSV จาก Google Sheets
         URL_LJ = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=LJ_Calculation"
         df_sheets = pd.read_csv(URL_LJ)
         
@@ -56,7 +57,7 @@ with tab1:
                 fig1.update_layout(xaxis_title="วัน-เวลาบันทึกผล", yaxis_title="ค่าวิเคราะห์ L1", height=380)
                 st.plotly_chart(fig1, use_container_width=True)
                 
-                # ใช้คำสั่ง divider มาตรฐานของ streamlit ป้องกันเออเร่อ unsafe_allow_html
+                # ตัวคั่นบรรทัดแบบเสถียร
                 st.divider()
                 
                 # ----------------------------------------------------
@@ -83,7 +84,7 @@ with tab1:
         st.error(f"การเชื่อมต่อกูเกิลชีตขัดข้อง: {e}")
 
 # ==========================================
-# ข้อที่ 2 - 7: ดึงรายงานสถิติจากคลัง GitHub
+# ข้อที่ 2 - 7: ฟังก์ชันดึงรายงานสถิติจากคลัง GitHub
 # ==========================================
 def load_github_csv(file_name):
     try:
@@ -93,7 +94,7 @@ def load_github_csv(file_name):
         st.warning(f"⚠️ กำลังรอไฟล์ {file_name} ซิงค์ข้อมูลเข้าสู่คลังหลัก")
 
 with tab2:
-    st.header("📊 2. สรุปอัตราส่วนเปอร์เซ็นต์การผ่านเกณฑ์มาตรฐาน (% Passing)")
+    st.header("📊 2. เปอร์เซ็นต์การผ่านเกณฑ์มาตรฐาน (% Passing)")
     load_github_csv("out_2_percentage.csv")
 with tab3:
     st.header("📅 3. รายงานสรุปผลการควบคุมคุณภาพภาพรวมรายปี")
@@ -108,4 +109,5 @@ with tab6:
     st.header("📋 6. ชุดข้อมูลดิบสำหรับพล็อตแผนภูมิควบคุม")
     load_github_csv("out_6_chart_data.csv")
 with tab7:
-    st.header("🛡️ 7. บันทึกการวิเคราะห์เกณฑ์
+    st.header("🛡️ 7. บันทึกการวิเคราะห์เกณฑ์ Westgard Multi-rule แบบละเอียด")
+    load_github_csv("out_7_lj_multi_rule.csv")
