@@ -8,66 +8,48 @@ st.title("📊 ระบบ IQC Dashboard")
 
 SHEET_ID = "16maoziMQKJiFtn-Rkzj_ZD7SZ7MqUBRcCj8MmYuwhxM"
 
-@st.cache_data
+@st.cache_data(ttl=0)
 def get_data(sheet_name):
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(sheet_name)}"
-    return pd.read_csv(url)
+    df = pd.read_csv(url)
+    df.columns = df.columns.str.strip()
+    return df
 
 try:
- # ... (ส่วนบนเหมือนเดิม) ...
-
-# โหลดข้อมูล
-df = get_data("Form_Responses")
-df.columns = df.columns.str.strip()
-# บังคับให้คอลัมน์ผลเป็นตัวเลข
-df['ผล Level 1'] = pd.to_numeric(df['ผล Level 1'], errors='coerce')
-df['ผล Level 2'] = pd.to_numeric(df['ผล Level 2'], errors='coerce')
-
-df['ประทับเวลา'] = pd.to_datetime(df['ประทับเวลา'], errors='coerce')
-df['วันที่'] = df['ประทับเวลา'].dt.strftime('%Y-%m-%d')
-
-# ... (ช่วงจัดการ master_row) ...
-# ถ้ายังขึ้นว่าไม่พบ ให้ลอง print ค่าออกมาดูครับ
-# st.write("รายการที่เลือก:", selected_test)
-# st.write("ข้อมูลใน Master:", df_master['รายการทดสอบ'].tolist())
+    # 1. โหลดข้อมูล (แก้ชื่อเป็น Form_Responses ตามที่พี่ใช้)
+    df = get_data("Form_Responses")
+    df.columns = df.columns.str.strip()
+    
+    # 2. บังคับเปลี่ยนผลเป็นตัวเลข
+    df['ผล Level 1'] = pd.to_numeric(df['ผล Level 1'], errors='coerce')
+    df['ผล Level 2'] = pd.to_numeric(df['ผล Level 2'], errors='coerce')
+    
+    df['ประทับเวลา'] = pd.to_datetime(df['ประทับเวลา'], errors='coerce')
+    df['วันที่'] = df['ประทับเวลา'].dt.strftime('%Y-%m-%d')
     
     df_master = get_data("Master_Tests")
     df_master.columns = df_master.columns.str.strip()
     
-    # จัดการชื่อรายการให้เหมือนกัน (ตัวเล็กหมด)
-    df['รายการทดสอบ'] = df['รายการทดสอบ'].astype(str).str.strip().str.lower()
-    df_master['รายการทดสอบ'] = df_master['รายการทดสอบ'].astype(str).str.strip().str.lower()
+    # ทำความสะอาดชื่อรายการ
+    df['รายการทดสอบ'] = df['รายการทดสอบ'].astype(str).str.strip()
+    df_master['รายการทดสอบ'] = df_master['รายการทดสอบ'].astype(str).str.strip()
     
-    # เลือกรายการ
-    options = df['รายการทดสอบ'].unique()
-    selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", options)
-    
+    # เลือกรายการทดสอบ
+    selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df['รายการทดสอบ'].unique())
     display_df = df[df['รายการทดสอบ'] == selected_test].copy()
     master_row = df_master[df_master['รายการทดสอบ'] == selected_test]
     
-    # --- กราฟ ---
-    st.header(f"📈 กราฟ Levey-Jennings: {selected_test}")
-    
-    def draw_graph(data, m_row, l_mean, l_sd, col, title):
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data['วันที่'], y=data[col], mode='lines+markers', name=col))
-        if not m_row.empty:
-            mean = m_row.iloc[0][l_mean]
-            sd = m_row.iloc[0][l_sd]
-            fig.add_hline(y=mean, line_color="black", annotation_text="Mean")
-            for i in [1, 2, 3]:
-                fig.add_hline(y=mean+(i*sd), line_dash="dash", line_color="red")
-                fig.add_hline(y=mean-(i*sd), line_dash="dash", line_color="red")
-        fig.update_layout(title=title, template="plotly_white")
-        return fig
-
-    c1, c2 = st.columns(2)
-    with c1: st.plotly_chart(draw_graph(display_df, master_row, 'L1_Mean', 'L1_SD', 'ผล Level 1', 'Level 1'), use_container_width=True)
-    with c2: st.plotly_chart(draw_graph(display_df, master_row, 'L2_Mean', 'L2_SD', 'ผล Level 2', 'Level 2'), use_container_width=True)
-    
-    # --- ตาราง ---
-    st.header("📋 ตารางสรุปข้อมูล")
+    # แสดงตาราง
+    st.header(f"📋 ตารางบันทึก IQC: {selected_test}")
     st.dataframe(display_df.sort_values(by='ประทับเวลา', ascending=False), use_container_width=True)
+
+    # วาดกราฟ
+    if not master_row.empty:
+        m = master_row.iloc[0]
+        st.header("📈 กราฟ Levey-Jennings")
+        # (ส่วนวาดกราฟ LJ ของพี่สามารถต่อจากตรงนี้ได้เลยครับ)
+    else:
+        st.warning(f"⚠️ ไม่พบข้อมูล '{selected_test}' ใน Master_Tests โปรดตรวจสอบชื่อให้ตรงกัน")
 
 except Exception as e:
     st.error(f"⚠️ เกิดข้อผิดพลาด: {e}")
