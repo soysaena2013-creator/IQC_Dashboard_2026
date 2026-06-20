@@ -4,46 +4,41 @@ import plotly.graph_objects as go
 import urllib.parse
 
 st.set_page_config(page_title="POCT IQC Dashboard 2026", layout="wide")
-st.title("📊 ระบบ IQC Dashboard")
+st.title("📊 ระบบ IQC Dashboard: รวมทุกชีต")
 
 SHEET_ID = "16maoziMQKJiFtn-Rkzj_ZD7SZ7MqUBRcCj8MmYuwhxM"
-SHEET_NAME = "การตอบแบบฟอร์ม 1"
-URL_FORM = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
+
+# รายชื่อชีตทั้งหมดที่พี่มี (ถ้ามีเพิ่ม พี่เติมชื่อในลิสต์นี้ได้เลยครับ)
+sheet_names = ["การตอบแบบฟอร์ม 1"] 
+
+# ฟังก์ชันดึงข้อมูลแต่ละชีต
+def load_data(sheet_name):
+    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(sheet_name)}"
+    df = pd.read_csv(url)
+    df.columns = df.columns.str.strip() # ลบช่องว่างหัวคอลัมน์
+    return df
+
+# 1. เลือกชีตก่อน
+selected_sheet = st.sidebar.selectbox("📂 เลือกชีตที่ต้องการดู:", sheet_names)
 
 try:
-    # 1. ดึงข้อมูล
-    df = pd.read_csv(URL_FORM)
+    # 2. โหลดข้อมูลตามชีตที่เลือก
+    df = load_data(selected_sheet)
+    df['ประทับเวลา'] = pd.to_datetime(df['ประทับเวลา'], errors='coerce')
     
-    # 2. ทำความสะอาดชื่อคอลัมน์ให้หมดจด
-    # ลบช่องว่าง และลบชื่อที่ลงท้ายด้วย _x, _y ออกทั้งหมด
-    df.columns = df.columns.str.strip().str.replace(r'_[xy]$', '', regex=True)
-    
-    # 3. ลบคอลัมน์ที่ชื่อซ้ำทิ้งทันที เหลือไว้แค่ชื่อละ 1 คอลัมน์
-    df = df.loc[:, ~df.columns.duplicated()]
-    
-    # 4. แปลงเวลา (ใช้ชื่อคอลัมน์ 'ประทับเวลา' ตามไฟล์พี่เป๊ะ)
-    df['Timestamp_dt'] = pd.to_datetime(df['ประทับเวลา'], errors='coerce')
-    
-    # 5. เลือกรายการ
+    # 3. เลือกรายการทดสอบ
     selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df['รายการทดสอบ'].unique())
     display_df = df[df['รายการทดสอบ'] == selected_test].copy()
     
-    # 6. เลือกคอลัมน์ที่จะโชว์ (จำกัดแค่รายการนี้เท่านั้น)
-    # ถ้าเห็นคอลัมน์ไหนเกินมาอีก บอกผมได้เลยครับ
-    cols_to_show = [
-        'ประทับเวลา', 'สาขา', 'รายการทดสอบ', 'ผล Level 1', 
-        'ผล Level 2', 'สาเหตุของปัญหา', 'วิธีการแก้ไขและ Comment', 'ชื่อผู้ปฏิบัติงาน'
-    ]
-    final_cols = [c for c in cols_to_show if c in display_df.columns]
+    # 4. แสดงตาราง
+    st.header(f"📋 ข้อมูลจากชีต: {selected_sheet} | รายการ: {selected_test}")
+    st.dataframe(display_df.sort_values(by='ประทับเวลา', ascending=False), use_container_width=True)
     
-    st.header(f"📋 ตารางบันทึก IQC: {selected_test}")
-    st.dataframe(display_df[final_cols].sort_values(by='Timestamp_dt', ascending=False), use_container_width=True)
-    
-    # 7. กราฟ LJ
+    # 5. กราฟ LJ
     st.header("📈 กราฟ Levey-Jennings")
     def plot_lj(data, col_name, title):
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data['Timestamp_dt'], y=data[col_name], mode='lines+markers', name=col_name))
+        fig.add_trace(go.Scatter(x=data['ประทับเวลา'], y=data[col_name], mode='lines+markers', name=col_name))
         m, s = data[col_name].mean(), data[col_name].std()
         fig.add_hline(y=m, line_color="green", line_width=3, annotation_text="Mean")
         fig.add_hline(y=m+(2*s), line_dash="dash", line_color="red", line_width=2, annotation_text="+2SD")
@@ -51,10 +46,8 @@ try:
         fig.update_layout(title=title, template="plotly_white")
         return fig
 
-    if 'ผล Level 1' in display_df.columns:
-        st.plotly_chart(plot_lj(display_df, 'ผล Level 1', 'Level 1'), use_container_width=True)
-    if 'ผล Level 2' in display_df.columns:
-        st.plotly_chart(plot_lj(display_df, 'ผล Level 2', 'Level 2'), use_container_width=True)
+    st.plotly_chart(plot_lj(display_df, 'ผล Level 1', 'Level 1'), use_container_width=True)
+    st.plotly_chart(plot_lj(display_df, 'ผล Level 2', 'Level 2'), use_container_width=True)
 
 except Exception as e:
-    st.error(f"⚠️ เกิดข้อผิดพลาด: {e}")
+    st.error(f"⚠️ เกิดข้อผิดพลาดในการโหลดข้อมูล: {e}")
