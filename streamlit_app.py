@@ -10,7 +10,7 @@ st.title("📊 ระบบ IQC Dashboard")
 SHEET_ID = "16maoziMQKJiFtn-Rkzj_ZD7SZ7MqUBRcCj8MmYuwhxM"
 URL_LJ = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=LJ_Calculation"
 
-# 3. สร้าง Tabs (คงค่าเดิมของพี่ไว้ 100%)
+# 3. สร้าง Tabs (คงค่าเดิมทั้งหมด)
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "1. กราฟและตารางรายวัน", "2. % Passing", "3. Yearly", "4. Staff", "5. Failed", "6. Raw Data", "7. Westgard"
 ])
@@ -26,19 +26,31 @@ with tab1:
 
         if not final_df.empty:
             st.subheader(f"📅 ตารางบันทึก IQC รายวัน")
-            
-            # ดึงทุกคอลัมน์ที่มีใน Sheet มาแสดง (เพื่อป้องกันการตกหล่นข้อมูล ISO)
             st.dataframe(final_df.sort_values(by='Timestamp', ascending=False), use_container_width=True)
             
-            # กราฟ (ใช้สีมาตรฐานเดิม)
+            # คำนวณ Mean และ SD (ดึงจาก Sheet ถ้ามี)
+            m1 = final_df['Mean L1'].iloc[0] if 'Mean L1' in final_df.columns else final_df['ผล Level 1'].mean()
+            s1 = final_df['SD L1'].iloc[0] if 'SD L1' in final_df.columns else final_df['ผล Level 1'].std()
+            
+            # กราฟที่เน้นเส้น Mean และ SD ให้ชัดเจน
             st.subheader("🔵 กราฟ Level 1")
             fig1 = go.Figure()
-            fig1.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 1'], mode='lines+markers', name='Level 1'))
+            fig1.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 1'], mode='lines+markers', name='Result'))
+            fig1.add_hline(y=m1, line_color="green", line_width=3, annotation_text="Mean")
+            fig1.add_hline(y=m1+(2*s1), line_dash="dash", line_color="red", line_width=2, annotation_text="+2SD")
+            fig1.add_hline(y=m1-(2*s1), line_dash="dash", line_color="red", line_width=2, annotation_text="-2SD")
             st.plotly_chart(fig1, use_container_width=True)
+            
+            # ทำแบบเดียวกันกับ Level 2
+            m2 = final_df['Mean L2'].iloc[0] if 'Mean L2' in final_df.columns else final_df['ผล Level 2'].mean()
+            s2 = final_df['SD L2'].iloc[0] if 'SD L2' in final_df.columns else final_df['ผล Level 2'].std()
             
             st.subheader("🔴 กราฟ Level 2")
             fig2 = go.Figure()
-            fig2.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 2'], mode='lines+markers', name='Level 2'))
+            fig2.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 2'], mode='lines+markers', name='Result'))
+            fig2.add_hline(y=m2, line_color="green", line_width=3, annotation_text="Mean")
+            fig2.add_hline(y=m2+(2*s2), line_dash="dash", line_color="red", line_width=2, annotation_text="+2SD")
+            fig2.add_hline(y=m2-(2*s2), line_dash="dash", line_color="red", line_width=2, annotation_text="-2SD")
             st.plotly_chart(fig2, use_container_width=True)
             
     except Exception as e:
