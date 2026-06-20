@@ -14,32 +14,32 @@ try:
     # 1. ดึงข้อมูล
     df = pd.read_csv(URL_FORM)
     
-    # 2. ล้างชื่อคอลัมน์: ตัด _x, _y ออก และตัดช่องว่างทิ้งให้หมด
-    df.columns = df.columns.str.replace(r'_[xy]$', '', regex=True).str.strip()
+    # 2. ทำความสะอาดชื่อคอลัมน์ให้หมดจด
+    # ลบช่องว่าง และลบชื่อที่ลงท้ายด้วย _x, _y ออกทั้งหมด
+    df.columns = df.columns.str.strip().str.replace(r'_[xy]$', '', regex=True)
     
-    # 3. ลบคอลัมน์ที่ซ้ำกันทิ้ง (นี่คือจุดที่แก้ปัญหา _x, _y ได้ชะงัดที่สุด)
+    # 3. ลบคอลัมน์ที่ชื่อซ้ำทิ้งทันที เหลือไว้แค่ชื่อละ 1 คอลัมน์
     df = df.loc[:, ~df.columns.duplicated()]
     
-    # 4. แปลงเวลา
+    # 4. แปลงเวลา (ใช้ชื่อคอลัมน์ 'ประทับเวลา' ตามไฟล์พี่เป๊ะ)
     df['Timestamp_dt'] = pd.to_datetime(df['ประทับเวลา'], errors='coerce')
     
     # 5. เลือกรายการ
     selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df['รายการทดสอบ'].unique())
     display_df = df[df['รายการทดสอบ'] == selected_test].copy()
     
-    # 6. คัดเลือกเฉพาะคอลัมน์ที่จะแสดง (ระบุชื่อคอลัมน์ให้ตรงเป๊ะ)
-    # ถ้ามีชื่อไหนเกินมาในตาราง พี่บอกชื่อนั้นได้เลย ผมจะสั่งเอาออกให้ครับ
+    # 6. เลือกคอลัมน์ที่จะโชว์ (จำกัดแค่รายการนี้เท่านั้น)
+    # ถ้าเห็นคอลัมน์ไหนเกินมาอีก บอกผมได้เลยครับ
     cols_to_show = [
         'ประทับเวลา', 'สาขา', 'รายการทดสอบ', 'ผล Level 1', 
         'ผล Level 2', 'สาเหตุของปัญหา', 'วิธีการแก้ไขและ Comment', 'ชื่อผู้ปฏิบัติงาน'
     ]
-    # กรองเอาเฉพาะคอลัมน์ที่มีอยู่จริง
-    valid_cols = [c for c in cols_to_show if c in display_df.columns]
+    final_cols = [c for c in cols_to_show if c in display_df.columns]
     
     st.header(f"📋 ตารางบันทึก IQC: {selected_test}")
-    st.dataframe(display_df[valid_cols].sort_values(by='Timestamp_dt', ascending=False), use_container_width=True)
+    st.dataframe(display_df[final_cols].sort_values(by='Timestamp_dt', ascending=False), use_container_width=True)
     
-    # 7. กราฟ
+    # 7. กราฟ LJ
     st.header("📈 กราฟ Levey-Jennings")
     def plot_lj(data, col_name, title):
         fig = go.Figure()
