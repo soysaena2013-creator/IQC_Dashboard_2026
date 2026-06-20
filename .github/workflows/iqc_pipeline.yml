@@ -1,0 +1,32 @@
+name: Automated IQC Analytics Pipeline
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # สั่งรันอัตโนมัติทุกเที่ยงคืน (พี่ปรับเปลี่ยนเวลาได้)
+  workflow_dispatch: # เปิดเปิดปุ่มพิเศษให้พี่กดสั่งรันด้วยมือเพื่ออัปเดตแบบ Real-time ได้ตลอดเวลา
+
+jobs:
+  analytics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Data Libraries
+        run: pip install pandas numpy
+
+      - name: Execute Analytical Pipeline
+        run: python process_data.py
+
+      - name: Push Cleaned Reports to GitHub
+        run: |
+          git config --global user.name 'IQC-Automation-Bot'
+          git config --global user.email 'iqc-bot@github.com'
+          git add out_*.csv
+          git commit -m "Auto-generated IQC report update: $(date +'%Y-%m-%d')" || exit 0
+          git push
