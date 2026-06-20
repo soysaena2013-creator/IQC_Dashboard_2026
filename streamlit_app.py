@@ -13,19 +13,20 @@ SHEET_NAME = "การตอบแบบฟอร์ม 1"
 URL_FORM = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
 
 try:
-    # ดึงข้อมูลและล้างช่องว่างชื่อคอลัมน์
+    # ดึงข้อมูล
     df = pd.read_csv(URL_FORM)
+    # ตัดช่องว่างรอบชื่อคอลัมน์ออก
     df.columns = df.columns.str.strip()
     
-    # แปลงประทับเวลา
+    # แปลงคอลัมน์ 'ประทับเวลา' เป็นรูปแบบวันที่
     df['Timestamp_dt'] = pd.to_datetime(df['ประทับเวลา'], errors='coerce')
     
-    # 3. เลือกรายการทดสอบ
+    # 3. ระบบเลือกรายการทดสอบ
     selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df['รายการทดสอบ'].unique())
     display_df = df[df['รายการทดสอบ'] == selected_test].copy()
     
-    # 4. แสดงตาราง (เน้นเอาเฉพาะคอลัมน์ที่พี่ระบุในไฟล์ CSV ของพี่)
-    # ผมตัดคอลัมน์ซ้ำและคอลัมน์ที่พี่ไม่ต้องการออกให้หมดแล้วครับ
+    # 4. แสดงตาราง (เน้นเฉพาะที่จำเป็นตามไฟล์ CSV ของพี่)
+    # ผมเลือกเฉพาะคอลัมน์สำคัญมาเรียงให้ดูง่าย ไม่รกตาครับ
     cols_to_show = [
         'ประทับเวลา', 'สาขา', 'รายการทดสอบ', 'ผล Level 1', 
         'ผล Level 2', 'สาเหตุของปัญหา', 'วิธีการแก้ไขและ Comment', 'ชื่อผู้ปฏิบัติงาน'
@@ -40,7 +41,7 @@ try:
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=data['Timestamp_dt'], y=data[col_name], mode='lines+markers', name=col_name))
         
-        # คำนวณ Mean และ SD จากข้อมูลที่เลือกมา
+        # คำนวณ Mean และ SD จากค่าที่มีอยู่ในตาราง
         m, s = data[col_name].mean(), data[col_name].std()
         
         fig.add_hline(y=m, line_color="green", line_width=3, annotation_text="Mean")
@@ -50,7 +51,7 @@ try:
         fig.update_layout(title=title, template="plotly_white")
         return fig
 
-    # แสดงกราฟตามคอลัมน์ในไฟล์
+    # แสดงกราฟตามคอลัมน์จริงในไฟล์พี่
     if 'ผล Level 1' in display_df.columns:
         st.plotly_chart(plot_lj(display_df, 'ผล Level 1', 'Level 1'), use_container_width=True)
     if 'ผล Level 2' in display_df.columns:
