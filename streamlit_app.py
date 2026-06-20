@@ -16,38 +16,36 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 ])
 
 with tab1:
-    st.header("📈 กราฟและตารางสรุปผลประจำวัน")
+    st.header("📈 กราฟ Levey-Jennings & ตารางสรุปรายวัน")
     try:
-        df_master = pd.read_csv(URL_LJ)
+        df = pd.read_csv(URL_LJ)
         
-        # เลือกรายการทดสอบ
-        selected_test = st.selectbox("🎯 1. เลือกรายการทดสอบ:", df_master['รายการทดสอบ'].unique())
-        final_df = df_master[df_master['รายการทดสอบ'] == selected_test]
+        # เลือกรายการทดสอบ (ตัวแปรหลัก)
+        selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df['รายการทดสอบ'].unique())
+        final_df = df[df['รายการทดสอบ'] == selected_test]
 
         if not final_df.empty:
             st.subheader(f"📅 ตารางบันทึก IQC รายวัน: {selected_test}")
-            
-            # ตารางสรุปผล
-            cols_to_show = ['Timestamp', 'ชื่อผู้ปฏิบัติงาน', 'ผล Level 1', 'ผล Level 2', 'สถานะ Re-run', 'สาเหตุของปัญหา', 'วิธีการแก้ไขและComment']
-            available_cols = [c for c in cols_to_show if c in final_df.columns]
+            # แสดงตาราง (เลือกเฉพาะคอลัมน์ที่มีอยู่จริง)
+            cols = ['Timestamp', 'ผู้บันทึก', 'ผล Level 1', 'ผล Level 2', 'ผ่านเกณฑ์', 'การแก้ไข/หมายเหตุ']
+            available_cols = [c for c in cols if c in final_df.columns]
             st.dataframe(final_df[available_cols].sort_values(by='Timestamp', ascending=False), use_container_width=True)
             
-            # กราฟแยก L1 และ L2
+            # พล็อตกราฟให้สวยงามและคมชัดเหมือนเดิม
             st.subheader("🔵 กราฟควบคุมคุณภาพ Level 1")
             fig1 = go.Figure()
-            fig1.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 1'], mode='lines+markers', name='Level 1'))
+            fig1.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 1'], mode='lines+markers', name='Level 1', line=dict(color='#1f77b4', width=3)))
+            fig1.update_layout(height=400, showlegend=True)
             st.plotly_chart(fig1, use_container_width=True)
             
             st.subheader("🔴 กราฟควบคุมคุณภาพ Level 2")
             fig2 = go.Figure()
-            fig2.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 2'], mode='lines+markers', name='Level 2', line=dict(color='red')))
+            fig2.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 2'], mode='lines+markers', name='Level 2', line=dict(color='#d62728', width=3)))
+            fig2.update_layout(height=400, showlegend=True)
             st.plotly_chart(fig2, use_container_width=True)
             
-        else:
-            st.warning("ไม่พบข้อมูลภายใต้เงื่อนไขที่เลือก")
-            
     except Exception as e:
-        st.error(f"เกิดข้อผิดพลาด: {e}")
+        st.error(f"โหลดข้อมูลขัดข้อง: {e}")
 
 # (ส่วน Tab 2-7 คงเดิม)
 def load_github_csv(file_name):
