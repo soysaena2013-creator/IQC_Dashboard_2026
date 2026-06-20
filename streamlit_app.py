@@ -24,30 +24,24 @@ with tab1:
         selected_test = st.selectbox("🎯 1. เลือกรายการทดสอบ:", df_master['รายการทดสอบ'].unique())
         final_df = df_master[df_master['รายการทดสอบ'] == selected_test]
 
-        # ตรวจสอบว่ามีข้อมูลหรือไม่
         if not final_df.empty:
-            st.subheader(f"📅 รายงานผลรายวัน: {selected_test}")
+            st.subheader(f"📅 ตารางบันทึก IQC รายวัน: {selected_test}")
             
-            # พี่ต้องตรวจสอบชื่อคอลัมน์ใน Google Sheets ให้ตรงกับรายการนี้
-            # จากภาพที่ส่งมา ผมดึงมาให้ตามชื่อจริงครับ
-            cols_to_show = [
-                'Timestamp', 'ชื่อผู้ปฏิบัติงาน', 'ผล Level 1', 'ผล Level 2', 
-                'สถานะ Re-run', 'สาเหตุของปัญหา', 'วิธีการแก้ไขและComment'
-            ]
-            
-            # กรองเอาเฉพาะคอลัมน์ที่มีอยู่จริง
+            # ตารางสรุปผล
+            cols_to_show = ['Timestamp', 'ชื่อผู้ปฏิบัติงาน', 'ผล Level 1', 'ผล Level 2', 'สถานะ Re-run', 'สาเหตุของปัญหา', 'วิธีการแก้ไขและComment']
             available_cols = [c for c in cols_to_show if c in final_df.columns]
-            
-            # แสดงตาราง
             st.dataframe(final_df[available_cols].sort_values(by='Timestamp', ascending=False), use_container_width=True)
             
-            # พล็อตกราฟ
-            fig = go.Figure()
-            if 'ผล Level 1' in final_df.columns:
-                fig.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 1'], mode='lines+markers', name='Level 1'))
-            if 'ผล Level 2' in final_df.columns:
-                fig.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 2'], mode='lines+markers', name='Level 2'))
-            st.plotly_chart(fig, use_container_width=True)
+            # กราฟแยก L1 และ L2
+            st.subheader("🔵 กราฟควบคุมคุณภาพ Level 1")
+            fig1 = go.Figure()
+            fig1.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 1'], mode='lines+markers', name='Level 1'))
+            st.plotly_chart(fig1, use_container_width=True)
+            
+            st.subheader("🔴 กราฟควบคุมคุณภาพ Level 2")
+            fig2 = go.Figure()
+            fig2.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 2'], mode='lines+markers', name='Level 2', line=dict(color='red')))
+            st.plotly_chart(fig2, use_container_width=True)
             
         else:
             st.warning("ไม่พบข้อมูลภายใต้เงื่อนไขที่เลือก")
