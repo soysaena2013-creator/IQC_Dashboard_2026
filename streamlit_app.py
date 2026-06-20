@@ -19,20 +19,19 @@ try:
     if 'ประทับเวลา' in df.columns:
         df['Timestamp_dt'] = pd.to_datetime(df['ประทับเวลา'], errors='coerce')
     
-    # 1. แสดงตาราง: เลือกโชว์เฉพาะคอลัมน์ที่จำเป็นและตัดคอลัมน์ซ้ำ/เกินออก
-    # ผมเลือกคอลัมน์มาโชว์ให้ดูสะอาดขึ้นตามที่พี่ต้องการครับ
+    # 1. แสดงตาราง: เลือกคอลัมน์แบบเน้นๆ เฉพาะที่ต้องใช้
+    # ตัดคอลัมน์เวลาที่ซ้ำซ้อนออกไปให้หมด เหลือแค่ 'ประทับเวลา'
     cols_to_show = [
-        'ประทับเวลา', 'สาขา', 'รายการทดสอบ', 'Lot_ชุดตรวจ', 'ผล Level 1', 
-        'สถานะ Level 1', 'ผล Level 2', 'สถานะ Level 2', 'สาเหตุของปัญหา', 
-        'วิธีการแก้ไขและ Comment', 'ชื่อผู้ปฏิบัติงาน'
+        'ประทับเวลา', 'สาขา', 'รายการทดสอบ', 'ผล Level 1', 
+        'ผล Level 2', 'สาเหตุของปัญหา', 'วิธีการแก้ไขและ Comment', 'ชื่อผู้ปฏิบัติงาน'
     ]
-    # เลือกเฉพาะที่มีในไฟล์จริง
     final_cols = [c for c in cols_to_show if c in df.columns]
     
     selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df['รายการทดสอบ'].unique())
     display_df = df[df['รายการทดสอบ'] == selected_test].copy()
     
-    st.header(f"📋 ตารางบันทึก IQC รายวัน: {selected_test}")
+    st.header(f"📋 ตารางบันทึก IQC: {selected_test}")
+    # แสดงตารางแบบสะอาดตา
     st.dataframe(display_df[final_cols].sort_values(by='Timestamp_dt', ascending=False), use_container_width=True)
 
     # 2. กราฟ LJ
