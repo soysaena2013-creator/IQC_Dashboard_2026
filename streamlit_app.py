@@ -9,7 +9,7 @@ st.title("📊 ระบบ IQC Analytics & Westgard Multi-rule Dashboard")
 st.markdown("---")
 
 # 📍 จุดสำคัญ: ให้พี่นำรหัสไฟล์ยาวๆ ที่คัดลอกมาจากขั้นตอนการแชร์มาวางแทนที่ข้อความด้านล่างนี้ครับ
-SHEET_ID = "16maoziMQKJiFtn-Rkzj_ZD7SZ7MqUBRcCj8MmYuwhxM/"
+SHEET_ID = "https://docs.google.com/spreadsheets/d/16maoziMQKJiFtn-Rkzj_ZD7SZ7MqUBRcCj8MmYuwhxM/edit?usp=sharing"
 SHEET_NAME = "LJ_Calculation"
 
 # ดึงข้อมูลจากแผ่นงานผ่านลิงก์ข้อมูลดิบ (gviz API) เพื่อป้องกันปัญหาภาษาไทยเพี้ยน
