@@ -23,7 +23,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 ])
 
 # ==========================================
-# ข้อที่ 1: กราฟ Levey-Jennings (แยก 2 กราฟ ระดับ 1 และ ระดับ 2)
+# ข้อที่ 1: กราฟ Levey-Jennings (แยก 2 กราฟเด็ดขาด ระดับ 1 และ ระดับ 2)
 # ==========================================
 with tab1:
     st.header("📈 1. แผนภูมิวิเคราะห์ Levey-Jennings Real-time (แยกระดับระดับสารควบคุม)")
@@ -48,7 +48,7 @@ with tab1:
                 if 'ผล Level 1' in test_df.columns:
                     fig1.add_trace(go.Scatter(x=test_df['Timestamp'], y=test_df['ผล Level 1'], mode='lines+markers', name='ผล QC Level 1', line=dict(color='#1f77b4', width=2), marker=dict(size=8)))
                 
-                # เส้นเกณฑ์ L1
+                # วาดเส้นเกณฑ์ควบคุมสำหรับ L1
                 fig1.add_hline(y=mean_l1, line_color="green", annotation_text="Mean")
                 fig1.add_hline(y=mean_l1 + (2*sd_l1), line_dash="dash", line_color="orange", annotation_text="+2SD")
                 fig1.add_hline(y=mean_l1 - (2*sd_l1), line_dash="dash", line_color="orange", annotation_text="-2SD")
@@ -57,7 +57,7 @@ with tab1:
                 fig1.update_layout(xaxis_title="วัน-เวลาบันทึกผล", yaxis_title="ค่าวิเคราะห์ L1", hovermode="x", height=400)
                 st.plotly_chart(fig1, use_container_width=True)
                 
-                st.markdown("<br><hr>", unsafe_with_html=True) # ขีดเส้นคั่นระหว่างระดับ
+                st.markdown("<br><hr>", unsafe_with_html=True) # ขีดเส้นแบ่งระหว่างกราฟเพื่อความชัดเจน
                 
                 # ----------------------------------------------------
                 # กราฟที่ 2: สารควบคุมคุณภาพ Level 2 (สีแดง)
@@ -70,8 +70,9 @@ with tab1:
                 if 'ผล Level 2' in test_df.columns:
                     fig2.add_trace(go.Scatter(x=test_df['Timestamp'], y=test_df['ผล Level 2'], mode='lines+markers', name='ผล QC Level 2', line=dict(color='#d62728', width=2), marker=dict(size=8)))
                 
-                # เส้นเกณฑ์ L2
+                # วาดเส้นเกณฑ์ควบคุมสำหรับ L2 (แก้ไขวงเล็บที่ปิดไม่ครบเรียบร้อยครับ)
                 fig2.add_hline(y=mean_l2, line_color="green", annotation_text="Mean")
                 fig2.add_hline(y=mean_l2 + (2*sd_l2), line_dash="dash", line_color="orange", annotation_text="+2SD")
                 fig2.add_hline(y=mean_l2 - (2*sd_l2), line_dash="dash", line_color="orange", annotation_text="-2SD")
-                fig2.add_hline(y=mean_l2 + (3*sd
+                fig2.add_hline(y=mean_l2 + (3*sd_l2), line_dash="dash", line_color="red", annotation_text="+3SD")
+                fig2.add_hline(y=mean_l2 - (3*sd_l2), line_dash="dash", line_color="red", annotation_text="-
