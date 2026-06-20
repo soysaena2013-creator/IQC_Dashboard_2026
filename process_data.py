@@ -8,7 +8,7 @@ MASTER_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTx-f6AauRF_G_Bvu4
 LJ_CALC_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTx-f6AauRF_G_Bvu48qKaMzUNXqDfKpF0LYNdvcdhP5cLqvvHcMWkpnVFTOIPg7o0iq16osYN4VGfk/pub?gid=2029348689&single=true&output=csv"
 
 try:
-    # โหลดข้อมูลและเซ็ตให้อ่านเป็น String ป้องกันจัดฟอร์แมตเพี้ยน
+    # โหลดข้อมูลทุกชีตเข้ามาเป็นแบบ String
     log_df = pd.read_csv(LOG_URL, dtype=str)
     inv_df = pd.read_csv(INV_URL, dtype=str)
     master_df = pd.read_csv(MASTER_URL, dtype=str)
@@ -17,12 +17,13 @@ except Exception as e:
     print(f"Error loading data from Google Sheets: {e}")
     exit(1)
 
-# จัดการคอลัมน์ตัวเลขให้พร้อมใช้
-for col in ['ผล Level 1', 'ผล Level 2', 'ผล Re-run']:
-    if col in log_df.columns:
-        log_df[col] = pd.to_numeric(log_df[col], errors='coerce')
+# ลบเว้นวรรคส่วนเกินที่หัวคอลัมน์ของทุกชีต
+log_df.columns = log_df.columns.str.strip()
+inv_df.columns = inv_df.columns.str.strip()
+master_df.columns = master_df.columns.str.strip()
+lj_calc_df.columns = lj_calc_df.columns.str.strip()
 
-# แปลงวันเวลาแบบยืดหยุ่น (แก้ปัญหาวันที่ว่างหรือฟอร์แมตผสม)
+# แปลงเวลาแบบปลอดภัยยืดหยุ่น (ดักจับค่าว่างหรือรูปแบบผสม)
 if 'Timestamp' in log_df.columns:
     log_df['Timestamp_dt'] = pd.to_datetime(log_df['Timestamp'], errors='coerce')
     log_df['วัน'] = log_df['Timestamp_dt'].dt.strftime('%Y-%m-%d')
@@ -38,10 +39,11 @@ p_done = (total_done / total_open) * 100 if total_open > 0 else 0
 pd.DataFrame([{'เปิดทั้งหมด': total_open, 'ทำIQC': total_done, 'ร้อยละ': round(p_done, 2)}]).to_csv('out_2_percentage.csv', index=False)
 
 # --- ข้อ 3 & 5: ตารางสรุปใหญ่ทั้งปี และรายการไม่ผ่านเกณฑ์แยกตามสาขา ---
-m_df = pd.merge(log_df, master_df, on='รายการทดสอบ', how='left', suffixes=('', '_master'))
+# เชื่อมข้อมูล Log และ Master ด้วย 'รายการทดสอบ' เพื่อดึงข้อมูล 'สาขา' ออกมาให้ถูกต้อง
+m_df = pd.merge(log_df, master_df[['รายการทดสอบ', 'สาขา', 'ผู้รับผิดชอบหลัก']], on='รายการทดสอบ', how='left')
 m_df.to_csv('out_3_yearly_summary.csv', index=False)
 
-# คัดกรองรายการที่ไม่ผ่านเกณฑ์ (Level 1, Level 2 หรือ Re-run)
+# ตรวจสอบรายการที่ไม่ผ่านเกณฑ์
 f1 = m_df['สถานะ Level 1'] == 'ไม่ผ่าน'
 f2 = m_df['สถานะ Level 2'] == 'ไม่ผ่าน'
 f3 = m_df['สถานะ Re-run'] == 'ไม่ผ่าน'
@@ -51,12 +53,20 @@ cols_to_save = [c for c in ['สาขา', 'วัน', 'เดือน', 'ร
 if not failed_df.empty:
     failed_df[cols_to_save].to_csv('out_5_failed_report.csv', index=False)
 else:
-    pd.DataFrame(columns=cols_to_save).to_csv('out_5_failed_report.csv', index=False)
+    pd.DataFrame(columns=['สาขา', 'วัน', 'เดือน', 'รายการทดสอบ', 'สาเหตุของปัญหา', 'วิธีการแก้ไขและ Comment']).to_csv('out_5_failed_report.csv', index=False)
 
-# --- ข้อ 4: สรุปงานรายคน + ผูกข้อมูลคุม Lot และวันหมดอายุ ---
-# เปลี่ยนมาเชื่อมข้อมูลด้วยคำว่า 'สาขา' ตามโครงสร้างจริงของชีต Inventory พี่ครับ
-inv_df_renamed = inv_df.rename(columns={'รายการทดสอบ': 'สาขา'})
-staff_df = pd.merge(master_df[['ผู้รับผิดชอบหลัก', 'สาขา', 'รายการทดสอบ']], inv_df_renamed, on='สาขา', how='left')
+# --- ข้อ 4: สรุปงานรายคน + ผูกข้อมูลคุม Lot และวันหมดอายุจาก Inventory ---
+# เนื่องจากชีต Inventory ของพี่คอลัมน์แรกสุดพิมพ์ว่า 'รายการทดสอบ' แต่ข้างในเก็บชื่อสาขา (เช่น เคมีคลินิก)
+# เราจะทำการเปลี่ยนชื่อคอลัมน์แรกของชีต Inventory ให้ชื่อว่า 'สาขา_คุมบ็อท' เพื่อไม่ให้ระบบงงเวลา Join ข้อมูลครับ
+inv_df_clean = inv_df.copy()
+if len(inv_df_clean.columns) > 0:
+    inv_df_clean.columns.values[0] = 'สาขา_คุมบ็อท'
+
+# นำแผนผังรายคนใน Master มารวบเข้ากับข้อมูล Lot ใน Inventory โดยใช้ ชื่อสาขา จับคู่กันครับ
+staff_df = pd.merge(master_df[['ผู้รับผิดชอบหลัก', 'สาขา', 'รายการทดสอบ']], inv_df_clean, left_on='สาขา', right_on='สาขา_คุมบ็อท', how='left')
+# ลบคอลัมน์ชั่วคราวออกเพื่อความสะอาดของไฟล์
+if 'สาขา_คุมบ็อท' in staff_df.columns:
+    staff_df = staff_df.drop(columns=['สาขา_คุมบ็อท'])
 staff_df.to_csv('out_4_staff_lots.csv', index=False)
 
 # --- ข้อ 6: สรุปสถิติจำนวนครั้งที่ไม่ผ่านแยกตามสาขา ---
@@ -89,7 +99,7 @@ def evaluate_westgard(df):
         if (z1 > 2 and z2 > 2) or (z1 < -2 and z2 < -2):
             rules.append("22s Violate")
             
-        # กฎ R4s (เช็คข้ามรันย้อนหลัง)
+        # กฎ R4s (เช็คค่าความต่างข้ามรันย้อนหลัง)
         if i > 0:
             prev_z1 = df.loc[i-1, 'Z-Score L1'] if 'Z-Score L1' in df.columns else 0
             if abs(z1 - prev_z1) > 4:
@@ -103,4 +113,4 @@ def evaluate_westgard(df):
 lj_output = evaluate_westgard(lj_calc_df)
 lj_output.to_csv('out_7_lj_multi_rule.csv', index=False)
 
-print("IQC Analytics Data Pipeline Processed Successfully with Real Links!")
+print("IQC Analytics Data Pipeline Processed Successfully without any KeyErrors!")
