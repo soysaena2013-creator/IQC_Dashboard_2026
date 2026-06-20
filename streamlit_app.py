@@ -11,7 +11,7 @@ st.markdown("---")
 SHEET_ID = "16maoziMQKJiFtn-Rkzj_ZD7SZ7MqUBRcCj8MmYuwhxM"
 BASE_GITHUB_URL = "https://raw.githubusercontent.com/soysaena2013-creator/IQC_Dashboard_2026/main/"
 
-# 3. คำสั่งสร้างแท็บเมนู 7 ข้อ (ห้ามลบบรรทัดนี้เด็ดขาดเพื่อป้องกัน NameError ครับพี่)
+# 3. คำสั่งสร้างแท็บเมนู 7 ข้อ
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "1. กราฟ Levey-Jennings (Real-time)",
     "2. สรุปเปอร์เซ็นต์ผ่านเกณฑ์ (% Passing)",
@@ -23,10 +23,10 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 ])
 
 # ==========================================
-# ข้อที่ 1: กราฟ Levey-Jennings 2 ระดับ (ดึง Real-time จาก Google Sheets)
+# ข้อที่ 1: กราฟ Levey-Jennings (แยก 2 กราฟ ระดับ 1 และ ระดับ 2)
 # ==========================================
 with tab1:
-    st.header("📈 1. แผนภูมิวิเคราะห์ Levey-Jennings Real-time (Level 1 & Level 2)")
+    st.header("📈 1. แผนภูมิวิเคราะห์ Levey-Jennings Real-time (แยกระดับระดับสารควบคุม)")
     try:
         URL_LJ = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=LJ_Calculation"
         df_sheets = pd.read_csv(URL_LJ)
@@ -37,53 +37,41 @@ with tab1:
             test_df = df_sheets[df_sheets['รายการทดสอบ'] == selected_test].reset_index(drop=True)
             
             if not test_df.empty:
+                # ----------------------------------------------------
+                # กราฟที่ 1: สารควบคุมคุณภาพ Level 1 (สีน้ำเงิน)
+                # ----------------------------------------------------
+                st.subheader("🔵 แผนภูมิควบคุมคุณภาพ Level 1")
                 mean_l1 = float(test_df.loc[0, 'Mean L1']) if 'Mean L1' in test_df.columns else 100
                 sd_l1 = float(test_df.loc[0, 'SD L1']) if 'SD L1' in test_df.columns else 2
                 
-                fig = go.Figure()
-                
-                # 🔵 พล็อตเส้นข้อมูลของ Level 1
+                fig1 = go.Figure()
                 if 'ผล Level 1' in test_df.columns:
-                    fig.add_trace(go.Scatter(x=test_df['Timestamp'], y=test_df['ผล Level 1'], mode='lines+markers', name='ผล QC Level 1', line=dict(color='#1f77b4')))
+                    fig1.add_trace(go.Scatter(x=test_df['Timestamp'], y=test_df['ผล Level 1'], mode='lines+markers', name='ผล QC Level 1', line=dict(color='#1f77b4', width=2), marker=dict(size=8)))
                 
-                # 🔴 พล็อตเส้นข้อมูลของ Level 2 เพิ่มเติมเข้ามาคู่กัน
+                # เส้นเกณฑ์ L1
+                fig1.add_hline(y=mean_l1, line_color="green", annotation_text="Mean")
+                fig1.add_hline(y=mean_l1 + (2*sd_l1), line_dash="dash", line_color="orange", annotation_text="+2SD")
+                fig1.add_hline(y=mean_l1 - (2*sd_l1), line_dash="dash", line_color="orange", annotation_text="-2SD")
+                fig1.add_hline(y=mean_l1 + (3*sd_l1), line_dash="dash", line_color="red", annotation_text="+3SD")
+                fig1.add_hline(y=mean_l1 - (3*sd_l1), line_dash="dash", line_color="red", annotation_text="-3SD")
+                fig1.update_layout(xaxis_title="วัน-เวลาบันทึกผล", yaxis_title="ค่าวิเคราะห์ L1", hovermode="x", height=400)
+                st.plotly_chart(fig1, use_container_width=True)
+                
+                st.markdown("<br><hr>", unsafe_with_html=True) # ขีดเส้นคั่นระหว่างระดับ
+                
+                # ----------------------------------------------------
+                # กราฟที่ 2: สารควบคุมคุณภาพ Level 2 (สีแดง)
+                # ----------------------------------------------------
+                st.subheader("🔴 แผนภูมิควบคุมคุณภาพ Level 2")
+                mean_l2 = float(test_df.loc[0, 'Mean L2']) if 'Mean L2' in test_df.columns else 200
+                sd_l2 = float(test_df.loc[0, 'SD L2']) if 'SD L2' in test_df.columns else 4
+                
+                fig2 = go.Figure()
                 if 'ผล Level 2' in test_df.columns:
-                    fig.add_trace(go.Scatter(x=test_df['Timestamp'], y=test_df['ผล Level 2'], mode='lines+markers', name='ผล QC Level 2', line=dict(color='#d62728')))
+                    fig2.add_trace(go.Scatter(x=test_df['Timestamp'], y=test_df['ผล Level 2'], mode='lines+markers', name='ผล QC Level 2', line=dict(color='#d62728', width=2), marker=dict(size=8)))
                 
-                fig.add_hline(y=mean_l1, line_color="green", annotation_text="Mean L1")
-                fig.add_hline(y=mean_l1 + (2*sd_l1), line_dash="dash", line_color="orange", annotation_text="+2SD L1")
-                fig.add_hline(y=mean_l1 - (2*sd_l1), line_dash="dash", line_color="orange", annotation_text="-2SD L1")
-                
-                fig.update_layout(xaxis_title="วัน-เวลาบันทึกผล", yaxis_title="ค่าวิเคราะห์", hovermode="x")
-                st.plotly_chart(fig, use_container_width=True)
-    except Exception as e:
-        st.error(f"การเชื่อมต่อกูเกิลชีตขัดข้อง: {e}")
-
-# ==========================================
-# ข้อที่ 2 - 7: ดึงรายงานสถิติไฟล์จากคลัง GitHub ของพี่
-# ==========================================
-def load_github_csv(file_name):
-    try:
-        df = pd.read_csv(f"{BASE_GITHUB_URL}{file_name}", encoding='utf-8')
-        st.dataframe(df, use_container_width=True)
-    except:
-        st.warning(f"⚠️ กำลังรอไฟล์ {file_name} ซิงค์ข้อมูลเข้าสู่คลังหลัก")
-
-with tab2:
-    st.header("📊 2. สรุปอัตราส่วนเปอร์เซ็นต์การผ่านเกณฑ์มาตรฐาน (% Passing)")
-    load_github_csv("out_2_percentage.csv")
-with tab3:
-    st.header("📅 3. รายงานสรุปผลการควบคุมคุณภาพภาพรวมรายปี")
-    load_github_csv("out_3_yearly_summary.csv")
-with tab4:
-    st.header("👥 4. สถิติการบันทึกผลแยกตามรายชื่อเจ้าหน้าที่ผู้ตรวจวิเคราะห์")
-    load_github_csv("out_4_staff_lots.csv")
-with tab5:
-    st.header("❌ 5. รายงานและบันทึกเหตุการณ์กรณีผลควบคุมตกเกณฑ์")
-    load_github_csv("out_5_failed_report.csv")
-with tab6:
-    st.header("📋 6. ชุดข้อมูลดิบสำหรับพล็อตแผนภูมิควบคุม")
-    load_github_csv("out_6_chart_data.csv")
-with tab7:
-    st.header("🛡️ 7. บันทึกการวิเคราะห์เกณฑ์ Westgard Multi-rule แบบละเอียด")
-    load_github_csv("out_7_lj_multi_rule.csv")
+                # เส้นเกณฑ์ L2
+                fig2.add_hline(y=mean_l2, line_color="green", annotation_text="Mean")
+                fig2.add_hline(y=mean_l2 + (2*sd_l2), line_dash="dash", line_color="orange", annotation_text="+2SD")
+                fig2.add_hline(y=mean_l2 - (2*sd_l2), line_dash="dash", line_color="orange", annotation_text="-2SD")
+                fig2.add_hline(y=mean_l2 + (3*sd
