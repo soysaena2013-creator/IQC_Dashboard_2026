@@ -82,7 +82,33 @@ with tab1:
             st.warning("⚠️ โครงสร้างตารางข้อมูลในแผ่นงานไม่ถูกต้องหรือยังไม่มีข้อมูลบันทึกเข้ามา")
     except Exception as e:
         st.error(f"การเชื่อมต่อกูเกิลชีตขัดข้อง: {e}")
+# เพิ่มส่วนนี้ในหน้า Tab 1 หรือสร้าง Tab ใหม่สำหรับ "ตารางสรุปรายวัน"
+st.subheader(f"📅 ตารางสรุปการบันทึก IQC ประจำเดือน (เลือกตามเงื่อนไขด้านบน)")
 
+# กรองข้อมูลเฉพาะเดือนปัจจุบัน (หรือตามช่วงเวลาที่พี่เลือกได้)
+if not final_df.empty:
+    # เลือกเฉพาะคอลัมน์ที่จำเป็นสำหรับตาราง IQC
+    display_cols = ['Timestamp', 'ผู้บันทึก', 'ผล Level 1', 'ผล Level 2', 'ผ่านเกณฑ์', 'การแก้ไข/หมายเหตุ', 'สถานะการแก้ไข']
+    
+    # ถ้ามีคอลัมน์เหล่านี้ในชีต ให้แสดงผล
+    available_cols = [c for c in display_cols if c in final_df.columns]
+    
+    # แสดงตาราง
+    st.dataframe(
+        final_df[available_cols].sort_values(by='Timestamp', ascending=False),
+        use_container_width=True,
+        hide_index=True
+    )
+    
+    # ปุ่มดาวน์โหลดตารางเป็น CSV หรือ Excel ไปใช้รายงาน
+    st.download_button(
+        label="📥 ดาวน์โหลดรายงานเป็นไฟล์ CSV",
+        data=final_df.to_csv(index=False).encode('utf-8'),
+        file_name=f"IQC_Report_{selected_sn}_{selected_loc}.csv",
+        mime="text/csv"
+    )
+else:
+    st.info("ยังไม่มีข้อมูลการบันทึก IQC ในเงื่อนไขที่เลือกครับ")
 # ==========================================
 # ข้อที่ 2 - 7: ฟังก์ชันดึงรายงานสถิติจากคลัง GitHub
 # ==========================================
