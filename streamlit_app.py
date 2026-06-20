@@ -10,7 +10,7 @@ st.title("📊 ระบบ IQC Analytics & Westgard Multi-rule Dashboard")
 st.write("ข้อมูลอัปเดตอัตโนมัติจากระบบห้องปฏิบัติการ")
 
 # ลิงก์ข้อมูลดิบจาก GitHub ของพี่
-URL_LJ = "https://raw.githubusercontent.com/soysaena2013-creator/repo/master/out_7_lj_multi_rule.csv"
+URL_LJ = https://github.com/soysaena2013-creator/IQC_Dashboard_2026/raw/refs/heads/main/out_7_lj_multi_rule.csv
 URL_PERCENT = "https://raw.githubusercontent.com/soysaena2013-creator/repo/master/out_2_percentage.csv"
 URL_FAILED = "https://raw.githubusercontent.com/soysaena2013-creator/repo/master/out_5_failed_report.csv"
 
