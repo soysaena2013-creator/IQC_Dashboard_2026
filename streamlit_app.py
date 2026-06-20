@@ -15,43 +15,41 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 ])
 
 with tab1:
-    st.header("📈 กราฟ Levey-Jennings & ตารางสรุปรายวัน")
+    st.header("📈 กราฟและตารางสรุปผลประจำวัน")
     try:
-        # ดึงข้อมูลจาก Google Sheets
-        df_master = pd.read_csv(URL_LJ)
+        df = pd.read_csv(URL_LJ)
         
         # เลือกรายการทดสอบ
-        selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df_master['รายการทดสอบ'].unique())
-        final_df = df_master[df_master['รายการทดสอบ'] == selected_test]
+        selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df['รายการทดสอบ'].unique())
+        final_df = df[df['รายการทดสอบ'] == selected_test]
 
         if not final_df.empty:
             st.subheader(f"📅 ตารางบันทึก IQC รายวัน: {selected_test}")
             
-            # ระบุชื่อคอลัมน์ให้ตรงกับที่พี่โชว์ในภาพ (ยึดตาม Header ใน Google Sheet)
-            cols_to_display = [
+            # ดึงคอลัมน์ที่จำเป็นตามที่พี่ต้องการให้ครบตาม ISO
+            cols_to_show = [
                 'Timestamp', 'ชื่อผู้ปฏิบัติงาน', 'ผล Level 1', 'ผล Level 2', 
                 'สถานะ Re-run', 'สาเหตุของปัญหา', 'วิธีการแก้ไขและComment'
             ]
-            
-            # กรองเฉพาะคอลัมน์ที่มีอยู่จริงใน DataFrame
-            available_cols = [c for c in cols_to_display if c in final_df.columns]
+            # กรองเอาเฉพาะที่เจอในไฟล์จริงๆ เพื่อป้องกัน Error
+            available_cols = [c for c in cols_to_show if c in final_df.columns]
             
             # แสดงตาราง
             st.dataframe(final_df[available_cols].sort_values(by='Timestamp', ascending=False), use_container_width=True)
             
-            # กราฟ LJ สำหรับ L1 และ L2 (แยกกันตามมาตรฐานที่พี่ต้องการ)
+            # พล็อตกราฟแยก L1 และ L2 (ให้เห็นชัดเจนแยกกราฟกัน)
             st.subheader("🔵 กราฟควบคุมคุณภาพ Level 1")
             fig1 = go.Figure()
-            fig1.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 1'], mode='lines+markers', name='Level 1'))
+            fig1.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 1'], mode='lines+markers', name='Level 1', line=dict(color='#1f77b4', width=3)))
             st.plotly_chart(fig1, use_container_width=True)
             
             st.subheader("🔴 กราฟควบคุมคุณภาพ Level 2")
             fig2 = go.Figure()
-            fig2.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 2'], mode='lines+markers', name='Level 2', line=dict(color='red')))
+            fig2.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 2'], mode='lines+markers', name='Level 2', line=dict(color='#d62728', width=3)))
             st.plotly_chart(fig2, use_container_width=True)
             
         else:
-            st.warning("ไม่พบข้อมูลในเงื่อนไขที่เลือก")
+            st.warning("ไม่พบข้อมูลสำหรับรายการที่เลือก")
             
     except Exception as e:
         st.error(f"เกิดข้อผิดพลาดในการโหลดข้อมูล: {e}")
