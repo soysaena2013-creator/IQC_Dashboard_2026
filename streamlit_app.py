@@ -14,11 +14,22 @@ def get_data(sheet_name):
     return pd.read_csv(url)
 
 try:
-    # โหลดข้อมูล
-    df = get_data("การตอบแบบฟอร์ม 1")
-    df.columns = df.columns.str.strip()
-    df['ประทับเวลา'] = pd.to_datetime(df['ประทับเวลา'], errors='coerce')
-    df['วันที่'] = df['ประทับเวลา'].dt.strftime('%Y-%m-%d')
+ # ... (ส่วนบนเหมือนเดิม) ...
+
+# โหลดข้อมูล
+df = get_data("Form_Responses")
+df.columns = df.columns.str.strip()
+# บังคับให้คอลัมน์ผลเป็นตัวเลข
+df['ผล Level 1'] = pd.to_numeric(df['ผล Level 1'], errors='coerce')
+df['ผล Level 2'] = pd.to_numeric(df['ผล Level 2'], errors='coerce')
+
+df['ประทับเวลา'] = pd.to_datetime(df['ประทับเวลา'], errors='coerce')
+df['วันที่'] = df['ประทับเวลา'].dt.strftime('%Y-%m-%d')
+
+# ... (ช่วงจัดการ master_row) ...
+# ถ้ายังขึ้นว่าไม่พบ ให้ลอง print ค่าออกมาดูครับ
+# st.write("รายการที่เลือก:", selected_test)
+# st.write("ข้อมูลใน Master:", df_master['รายการทดสอบ'].tolist())
     
     df_master = get_data("Master_Tests")
     df_master.columns = df_master.columns.str.strip()
