@@ -26,26 +26,25 @@ try:
     st.header("📈 กราฟ Levey-Jennings")
 
 # วางโค้ดนี้แทนที่ฟังก์ชันวาดกราฟเดิมของพี่ได้เลยครับ
-    def draw_lj_standard(data, mean_val, sd_val, col_name, title):
-        fig = go.Figure()
-        # จุดข้อมูล
-        fig.add_trace(go.Scatter(x=data['ประทับเวลา'], y=data[col_name], mode='lines+markers', name=col_name))
+def plot_lj_standard(data, mean, sd, col, title):
+    fig = go.Figure()
+    # จุดข้อมูล
+    fig.add_trace(go.Scatter(x=data['ประทับเวลา'], y=data[col], mode='lines+markers', name=col))
+    
+    # เส้น Mean (เส้นทึบสีดำ)
+    fig.add_hline(y=mean, line_color="black", line_width=2, line_dash="solid", annotation_text="Mean")
+    
+    # เส้น SD +/- 1, 2, 3 (สีตามมาตรฐานแล็บ)
+    sd_colors = {1: "gray", 2: "orange", 3: "red"}
+    
+    for i in [1, 2, 3]:
+        # เส้นบวก SD
+        fig.add_hline(y=mean+(i*sd), line_dash="dash", line_color=sd_colors[i], annotation_text=f"+{i}SD")
+        # เส้นลบ SD
+        fig.add_hline(y=mean-(i*sd), line_dash="dash", line_color=sd_colors[i], annotation_text=f"-{i}SD")
         
-        # เส้น Mean (เส้นทึบสีดำ)
-        fig.add_hline(y=mean_val, line_color="black", line_width=2, line_dash="solid", annotation_text="Mean")
-        
-        # เส้น SD +/- 1, 2, 3
-        # 1SD (สีเทา), 2SD (สีส้ม), 3SD (สีแดง)
-        sd_config = {1: "gray", 2: "orange", 3: "red"}
-        
-        for i in [1, 2, 3]:
-            # เส้นบวก
-            fig.add_hline(y=mean_val+(i*sd_val), line_dash="dash", line_color=sd_config[i], annotation_text=f"+{i}SD")
-            # เส้นลบ
-            fig.add_hline(y=mean_val-(i*sd_val), line_dash="dash", line_color=sd_config[i], annotation_text=f"-{i}SD")
-            
-        fig.update_layout(title=f"LJ Chart: {title}", template="plotly_white", yaxis_title="Result")
-        return fig
+    fig.update_layout(title=f"LJ Chart: {title}", template="plotly_white", yaxis_title="Result")
+    return fig
 
     # เรียกใช้ฟังก์ชันเดิมโดยไม่กระทบโครงสร้างอื่น
     st.plotly_chart(draw_lj_with_sd(display_df, 'ผล Level 1', 'Level 1'), use_container_width=True)
