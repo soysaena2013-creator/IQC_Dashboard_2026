@@ -48,3 +48,34 @@ try:
 
 except Exception as e:
     st.error(f"⚠️ เกิดข้อผิดพลาด: {e}")
+# 4. ทำตารางสรุป IQC รายวัน
+    st.header(f"📋 สรุปรายการบันทึก: {selected_test}")
+    
+    # เลือกคอลัมน์ที่พี่ต้องการแสดง (พี่สามารถปรับชื่อคอลัมน์ในลิสต์นี้ได้ตามต้องการ)
+    cols_to_show = [
+        'ประทับเวลา', 'สาขา', 'Lot_ชุดตรวจ', 'Exp_ชุดตรวจ', 
+        'Lot_IQC-L1', 'Exp_IQC-L1', 'ผล Level 1', 'สถานะ Level 1',
+        'Lot_IQC-L2', 'Exp_IQC-L2', 'ผล Level 2', 'สถานะ Level 2'
+    ]
+    
+    # สร้างตารางที่คัดกรองเฉพาะคอลัมน์ที่เลือก
+    summary_df = display_df[cols_to_show].sort_values(by='ประทับเวลา', ascending=False)
+    
+    # ใส่สีให้สถานะ "ผ่าน" เป็นเขียว และอื่นๆ เป็นแดง (เพื่อให้พี่ดูง่าย)
+    def color_status(val):
+        color = 'green' if val == 'ผ่าน' else 'red'
+        return f'color: {color}; font-weight: bold'
+
+    # แสดงผลตารางแบบ Interactive
+    st.dataframe(
+        summary_df.style.applymap(color_status, subset=['สถานะ Level 1', 'สถานะ Level 2']),
+        use_container_width=True
+    )
+    
+    # เพิ่มปุ่มดาวน์โหลดเป็น Excel
+    @st.cache_data
+    def convert_df(df):
+        return df.to_csv(index=False).encode('utf-8')
+    
+    csv = convert_df(summary_df)
+    st.download_button("📥 ดาวน์โหลดข้อมูลเป็น CSV", csv, "iqc_summary.csv", "text/csv")
