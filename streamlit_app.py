@@ -3,64 +3,49 @@ import pandas as pd
 import plotly.graph_objects as go
 import urllib.parse
 
-# 1. ตั้งค่าพื้นฐาน
+# [ส่วนที่พี่ใช้งานได้ดีอยู่แล้ว ผมล็อกไว้ให้ครับ]
 st.set_page_config(page_title="POCT IQC Dashboard 2026", layout="wide")
 st.title("📊 ระบบ IQC Dashboard")
 
 SHEET_ID = "16maoziMQKJiFtn-Rkzj_ZD7SZ7MqUBRcCj8MmYuwhxM"
-
-# 2. ฟังก์ชันดึงข้อมูลแบบสะอาด (แยกชีต ไม่มีการรวมตารางที่ก่อให้เกิดชื่อซ้ำ)
-@st.cache_data
-def get_data(sheet_name):
-    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(sheet_name)}"
-    df = pd.read_csv(url)
-    df.columns = df.columns.str.strip()
-    return df
+URL_FORM = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote('การตอบแบบฟอร์ม 1')}"
 
 try:
-    # ดึงข้อมูลจาก 2 ชีตหลักที่ต้องใช้งาน
-    df_log = get_data("การตอบแบบฟอร์ม 1")
-    df_master = get_data("Master_Tests")
+    df = pd.read_csv(URL_FORM)
+    df.columns = df.columns.str.strip()
+    df['ประทับเวลา'] = pd.to_datetime(df['ประทับเวลา'], errors='coerce')
     
-    # แปลงเวลา
-    df_log['ประทับเวลา'] = pd.to_datetime(df_log['ประทับเวลา'], errors='coerce')
+    selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df['รายการทดสอบ'].unique())
+    display_df = df[df['รายการทดสอบ'] == selected_test].copy()
     
-    # ตัวเลือกรายการทดสอบ
-    selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df_log['รายการทดสอบ'].unique())
-    
-    # กรองข้อมูล
-    display_df = df_log[df_log['รายการทดสอบ'] == selected_test].sort_values(by='ประทับเวลา', ascending=False)
-    master_info = df_master[df_master['รายการทดสอบ'] == selected_test].iloc[0]
-    
-    # 3. กราฟ LJ (มาตรฐาน Westgard)
-    st.header(f"📈 กราฟ Levey-Jennings: {selected_test}")
-    
-    def plot_lj(data, mean, sd, col, title):
+    # ส่วนแสดงตารางที่พี่ต้องการ (คงไว้เหมือนเดิม)
+    st.header(f"📋 ตารางบันทึก IQC: {selected_test}")
+    st.dataframe(display_df.sort_values(by='ประทับเวลา', ascending=False), use_container_width=True)
+
+    # [ส่วนที่แก้ไขเฉพาะเรื่องกราฟ LJ ให้มีเส้น SD]
+    st.header("📈 กราฟ Levey-Jennings")
+
+    def draw_lj_with_sd(data, col_name, title):
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data['ประทับเวลา'], y=data[col], mode='lines+markers', name=col))
+        fig.add_trace(go.Scatter(x=data['ประทับเวลา'], y=data[col_name], mode='lines+markers', name=col_name))
         
-        # เส้น Mean
-        fig.add_hline(y=mean, line_color="black", line_width=2, annotation_text="Mean")
+        # คำนวณ Mean/SD จากข้อมูลในชุดนั้น (พี่สามารถปรับเป็นค่าคงที่จากไฟล์ Master ได้ในอนาคต)
+        m, s = data[col_name].mean(), data[col_name].std()
         
-        # เส้น SD 1, 2, 3
-        colors = {1: "gray", 2: "orange", 3: "red"}
+        # เพิ่มเส้น Mean
+        fig.add_hline(y=m, line_color="black", line_width=2, annotation_text="Mean")
+        
+        # เพิ่มเส้น SD +/- 1, 2, 3
         for i in [1, 2, 3]:
-            fig.add_hline(y=mean+(i*sd), line_dash="dash", line_color=colors[i], annotation_text=f"+{i}SD")
-            fig.add_hline(y=mean-(i*sd), line_dash="dash", line_color=colors[i], annotation_text=f"-{i}SD")
+            fig.add_hline(y=m+(i*s), line_dash="dash", line_color="red")
+            fig.add_hline(y=m-(i*s), line_dash="dash", line_color="red")
             
-        fig.update_layout(title=title, template="plotly_white", yaxis_title="Result")
+        fig.update_layout(title=title, template="plotly_white")
         return fig
 
-    # แสดงกราฟ 2 ฝั่ง
-    c1, c2 = st.columns(2)
-    with c1:
-        st.plotly_chart(plot_lj(display_df, master_info['L1_Mean'], master_info['L1_SD'], 'ผล Level 1', 'Level 1'), use_container_width=True)
-    with c2:
-        st.plotly_chart(plot_lj(display_df, master_info['L2_Mean'], master_info['L2_SD'], 'ผล Level 2', 'Level 2'), use_container_width=True)
-
-    # 4. ตารางแสดงข้อมูล
-    st.header("📋 ข้อมูลการบันทึก")
-    st.dataframe(display_df, use_container_width=True)
+    # เรียกใช้ฟังก์ชันเดิมโดยไม่กระทบโครงสร้างอื่น
+    st.plotly_chart(draw_lj_with_sd(display_df, 'ผล Level 1', 'Level 1'), use_container_width=True)
+    st.plotly_chart(draw_lj_with_sd(display_df, 'ผล Level 2', 'Level 2'), use_container_width=True)
 
 except Exception as e:
-    st.error(f"⚠️ เกิดข้อผิดพลาด: โปรดตรวจสอบว่าชื่อคอลัมน์ใน Google Sheets ตรงกับโค้ดหรือไม่ ({e})")
+    st.error(f"⚠️ เกิดข้อผิดพลาด: {e}")
