@@ -26,22 +26,26 @@ try:
     st.header("📈 กราฟ Levey-Jennings")
 
 # วางโค้ดนี้แทนที่ฟังก์ชันวาดกราฟเดิมของพี่ได้เลยครับ
-def plot_lj_standard(data, mean, sd, col, title):
+def plot_lj_standard(data, mean_val, sd_val, col_name, title):
     fig = go.Figure()
-    # จุดข้อมูล
-    fig.add_trace(go.Scatter(x=data['ประทับเวลา'], y=data[col], mode='lines+markers', name=col))
     
-    # เส้น Mean (เส้นทึบสีดำ)
-    fig.add_hline(y=mean, line_color="black", line_width=2, line_dash="solid", annotation_text="Mean")
+    # 1. วาดจุดข้อมูล
+    fig.add_trace(go.Scatter(x=data['ประทับเวลา'], y=data[col_name], mode='lines+markers', name=col_name, line=dict(color='blue')))
     
-    # เส้น SD +/- 1, 2, 3 (สีตามมาตรฐานแล็บ)
-    sd_colors = {1: "gray", 2: "orange", 3: "red"}
+    # 2. วาดเส้น Mean (เส้นทึบสีดำ)
+    fig.add_hline(y=mean_val, line_color="black", line_width=2, line_dash="solid", annotation_text="Mean")
+    
+    # 3. วาดเส้น SD +/- 1, 2, 3
+    # 1SD = เทา, 2SD = ส้ม, 3SD = แดง
+    sd_config = {1: {"color": "gray", "dash": "dash"}, 
+                 2: {"color": "orange", "dash": "dash"}, 
+                 3: {"color": "red", "dash": "dash"}}
     
     for i in [1, 2, 3]:
-        # เส้นบวก SD
-        fig.add_hline(y=mean+(i*sd), line_dash="dash", line_color=sd_colors[i], annotation_text=f"+{i}SD")
-        # เส้นลบ SD
-        fig.add_hline(y=mean-(i*sd), line_dash="dash", line_color=sd_colors[i], annotation_text=f"-{i}SD")
+        # เส้นบวก
+        fig.add_hline(y=mean_val+(i*sd_val), line_dash=sd_config[i]["dash"], line_color=sd_config[i]["color"], annotation_text=f"+{i}SD")
+        # เส้นลบ
+        fig.add_hline(y=mean_val-(i*sd_val), line_dash=sd_config[i]["dash"], line_color=sd_config[i]["color"], annotation_text=f"-{i}SD")
         
     fig.update_layout(title=f"LJ Chart: {title}", template="plotly_white", yaxis_title="Result")
     return fig
