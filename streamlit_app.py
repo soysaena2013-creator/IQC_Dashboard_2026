@@ -10,49 +10,39 @@ st.title("📊 ระบบ IQC Dashboard")
 SHEET_ID = "16maoziMQKJiFtn-Rkzj_ZD7SZ7MqUBRcCj8MmYuwhxM"
 URL_LJ = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=LJ_Calculation"
 
+# 3. สร้าง Tabs (คงค่าเดิมของพี่ไว้ 100%)
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "1. กราฟและตารางรายวัน", "2. % Passing", "3. Yearly", "4. Staff", "5. Failed", "6. Raw Data", "7. Westgard"
 ])
 
 with tab1:
-    st.header("📈 กราฟและตารางสรุปผลประจำวัน")
+    st.header("📈 กราฟ Levey-Jennings & ตารางสรุปรายวัน")
     try:
         df = pd.read_csv(URL_LJ)
         
         # เลือกรายการทดสอบ
-        selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df['รายการทดสอบ'].unique())
+        selected_test = st.selectbox("🎯 1. รายการทดสอบ:", df['รายการทดสอบ'].unique())
         final_df = df[df['รายการทดสอบ'] == selected_test]
 
         if not final_df.empty:
-            st.subheader(f"📅 ตารางบันทึก IQC รายวัน: {selected_test}")
+            st.subheader(f"📅 ตารางบันทึก IQC รายวัน")
             
-            # ดึงคอลัมน์ที่จำเป็นตามที่พี่ต้องการให้ครบตาม ISO
-            cols_to_show = [
-                'Timestamp', 'ชื่อผู้ปฏิบัติงาน', 'ผล Level 1', 'ผล Level 2', 
-                'สถานะ Re-run', 'สาเหตุของปัญหา', 'วิธีการแก้ไขและComment'
-            ]
-            # กรองเอาเฉพาะที่เจอในไฟล์จริงๆ เพื่อป้องกัน Error
-            available_cols = [c for c in cols_to_show if c in final_df.columns]
+            # ดึงทุกคอลัมน์ที่มีใน Sheet มาแสดง (เพื่อป้องกันการตกหล่นข้อมูล ISO)
+            st.dataframe(final_df.sort_values(by='Timestamp', ascending=False), use_container_width=True)
             
-            # แสดงตาราง
-            st.dataframe(final_df[available_cols].sort_values(by='Timestamp', ascending=False), use_container_width=True)
-            
-            # พล็อตกราฟแยก L1 และ L2 (ให้เห็นชัดเจนแยกกราฟกัน)
-            st.subheader("🔵 กราฟควบคุมคุณภาพ Level 1")
+            # กราฟ (ใช้สีมาตรฐานเดิม)
+            st.subheader("🔵 กราฟ Level 1")
             fig1 = go.Figure()
-            fig1.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 1'], mode='lines+markers', name='Level 1', line=dict(color='#1f77b4', width=3)))
+            fig1.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 1'], mode='lines+markers', name='Level 1'))
             st.plotly_chart(fig1, use_container_width=True)
             
-            st.subheader("🔴 กราฟควบคุมคุณภาพ Level 2")
+            st.subheader("🔴 กราฟ Level 2")
             fig2 = go.Figure()
-            fig2.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 2'], mode='lines+markers', name='Level 2', line=dict(color='#d62728', width=3)))
+            fig2.add_trace(go.Scatter(x=final_df['Timestamp'], y=final_df['ผล Level 2'], mode='lines+markers', name='Level 2'))
             st.plotly_chart(fig2, use_container_width=True)
             
-        else:
-            st.warning("ไม่พบข้อมูลสำหรับรายการที่เลือก")
-            
     except Exception as e:
-        st.error(f"เกิดข้อผิดพลาดในการโหลดข้อมูล: {e}")
+        st.error(f"โหลดข้อมูลขัดข้อง: {e}")
 
 # (ส่วน Tab 2-7 คงเดิม)
 def load_github_csv(file_name):
