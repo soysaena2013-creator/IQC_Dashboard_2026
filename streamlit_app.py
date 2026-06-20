@@ -53,3 +53,27 @@ try:
 
 except Exception as e:
     st.error(f"⚠️ เกิดข้อผิดพลาด: {e}")
+    # เพิ่มฟังก์ชันวาดกราฟ LJ มาตรฐาน Westgard เข้าไปในโค้ดเดิมของพี่ครับ
+def draw_lj_standard(data, mean_val, sd_val, col_name, title):
+    fig = go.Figure()
+    # จุดข้อมูล
+    fig.add_trace(go.Scatter(x=data['ประทับเวลา'], y=data[col_name], mode='lines+markers', name=col_name))
+    
+    # เส้น Mean
+    fig.add_hline(y=mean_val, line_color="black", line_width=2, line_dash="solid", annotation_text="Mean")
+    
+    # เส้น SD +/- 1, 2, 3 (สีตามมาตรฐานแล็บ)
+    sd_colors = {1: "gray", 2: "orange", 3: "red"}
+    for i in [1, 2, 3]:
+        # เส้นบวก
+        fig.add_hline(y=mean_val+(i*sd_val), line_dash="dash", line_color=sd_colors[i], annotation_text=f"+{i}SD")
+        # เส้นลบ
+        fig.add_hline(y=mean_val-(i*sd_val), line_dash="dash", line_color=sd_colors[i], annotation_text=f"-{i}SD")
+        
+    fig.update_layout(title=title, template="plotly_white", yaxis_title="Result")
+    return fig
+
+# วิธีเรียกใช้ (ให้เอาไปใส่ในส่วนที่แสดงกราฟของพี่)
+# ตัวอย่าง:
+# master = df_master[df_master['รายการทดสอบ'] == selected_test].iloc[0]
+# st.plotly_chart(draw_lj_standard(display_df, master['L1_Mean'], master['L1_SD'], 'ผล Level 1', 'Level 1'))
