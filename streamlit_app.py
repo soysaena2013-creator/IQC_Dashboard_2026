@@ -27,7 +27,26 @@ try:
     display_df = df[df['รายการทดสอบ'] == selected_test].copy()
     
     # 3. ดึงค่า Master (แก้ปัญหา out-of-bounds)
+    # 3. ดึงค่า Master (แก้ไขส่วนนี้)
     master_row = df_master[df_master['รายการทดสอบ'] == selected_test]
+    
+    st.header(f"📋 ตารางบันทึก IQC: {selected_test}")
+    st.dataframe(display_df.sort_values(by='ประทับเวลา', ascending=False), use_container_width=True)
+
+    st.header("📈 กราฟ Levey-Jennings")
+
+    if not master_row.empty:
+        # ... (โค้ดวาดกราฟเดิมของพี่) ...
+        m = master_row.iloc[0]
+        c1, c2 = st.columns(2)
+        with c1:
+            st.plotly_chart(plot_lj_standard(display_df, m['L1_Mean'], m['L1_SD'], 'ผล Level 1', 'Level 1'), use_container_width=True)
+        with c2:
+            st.plotly_chart(plot_lj_standard(display_df, m['L2_Mean'], m['L2_SD'], 'ผล Level 2', 'Level 2'), use_container_width=True)
+    else:
+        st.error(f"⚠️ ระบบหาค่าอ้างอิงสำหรับ '{selected_test}' ไม่เจอ!")
+        st.write("ตรวจสอบในไฟล์ Master_Tests ว่ามีรายการนี้อยู่หรือไม่ และสะกดตรงกับที่บันทึกไว้ไหม")
+        st.write("รายชื่อรายการที่มีใน Master ตอนนี้คือ:", df_master['รายการทดสอบ'].unique())
     
     st.header(f"📋 ตารางบันทึก IQC: {selected_test}")
     st.dataframe(display_df.sort_values(by='ประทับเวลา', ascending=False), use_container_width=True)
