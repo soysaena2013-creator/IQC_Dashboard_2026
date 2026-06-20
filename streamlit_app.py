@@ -7,25 +7,25 @@ import urllib.parse
 st.set_page_config(page_title="POCT IQC Dashboard 2026", layout="wide")
 st.title("📊 ระบบ IQC Dashboard")
 
-# 2. ข้อมูลจาก Google Sheets (Sheet: การตอบแบบฟอร์ม 1)
+# 2. ดึงข้อมูลจากไฟล์ 'การตอบแบบฟอร์ม 1'
 SHEET_ID = "16maoziMQKJiFtn-Rkzj_ZD7SZ7MqUBRcCj8MmYuwhxM"
 SHEET_NAME = "การตอบแบบฟอร์ม 1"
 URL_FORM = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
 
 try:
-    # ดึงข้อมูล
+    # ดึงข้อมูลและล้างช่องว่างชื่อคอลัมน์
     df = pd.read_csv(URL_FORM)
-    # ลบช่องว่างรอบชื่อคอลัมน์
     df.columns = df.columns.str.strip()
     
-    # แปลงคอลัมน์ 'ประทับเวลา'
+    # แปลงประทับเวลา
     df['Timestamp_dt'] = pd.to_datetime(df['ประทับเวลา'], errors='coerce')
     
     # 3. เลือกรายการทดสอบ
     selected_test = st.selectbox("🎯 เลือกรายการทดสอบ:", df['รายการทดสอบ'].unique())
     display_df = df[df['รายการทดสอบ'] == selected_test].copy()
     
-    # 4. แสดงตาราง (เลือกเฉพาะคอลัมน์ที่จำเป็นและไม่ซ้ำซ้อน)
+    # 4. แสดงตาราง (เน้นเอาเฉพาะคอลัมน์ที่พี่ระบุในไฟล์ CSV ของพี่)
+    # ผมตัดคอลัมน์ซ้ำและคอลัมน์ที่พี่ไม่ต้องการออกให้หมดแล้วครับ
     cols_to_show = [
         'ประทับเวลา', 'สาขา', 'รายการทดสอบ', 'ผล Level 1', 
         'ผล Level 2', 'สาเหตุของปัญหา', 'วิธีการแก้ไขและ Comment', 'ชื่อผู้ปฏิบัติงาน'
@@ -40,15 +40,21 @@ try:
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=data['Timestamp_dt'], y=data[col_name], mode='lines+markers', name=col_name))
         
-        # คำนวณจากข้อมูลจริงในตาราง
+        # คำนวณ Mean และ SD จากข้อมูลที่เลือกมา
         m, s = data[col_name].mean(), data[col_name].std()
         
         fig.add_hline(y=m, line_color="green", line_width=3, annotation_text="Mean")
         fig.add_hline(y=m+(2*s), line_dash="dash", line_color="red", line_width=2, annotation_text="+2SD")
         fig.add_hline(y=m-(2*s), line_dash="dash", line_color="red", line_width=2, annotation_text="-2SD")
+        
         fig.update_layout(title=title, template="plotly_white")
         return fig
 
-    # แสดงกราฟ Level 1 และ Level 2
-    st.plotly_chart(plot_lj(display_df, 'ผล Level 1', 'Level 1'), use_container_width=True)
-    st.plotly_chart
+    # แสดงกราฟตามคอลัมน์ในไฟล์
+    if 'ผล Level 1' in display_df.columns:
+        st.plotly_chart(plot_lj(display_df, 'ผล Level 1', 'Level 1'), use_container_width=True)
+    if 'ผล Level 2' in display_df.columns:
+        st.plotly_chart(plot_lj(display_df, 'ผล Level 2', 'Level 2'), use_container_width=True)
+
+except Exception as e:
+    st.error(f"⚠️ เกิดข้อผิดพลาด: {e}")
