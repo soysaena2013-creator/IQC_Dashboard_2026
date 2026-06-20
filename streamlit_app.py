@@ -56,7 +56,8 @@ with tab1:
                 fig1.update_layout(xaxis_title="วัน-เวลาบันทึกผล", yaxis_title="ค่าวิเคราะห์ L1", height=380)
                 st.plotly_chart(fig1, use_container_width=True)
                 
-                st.markdown("<br><hr>", unsafe_with_html=True)
+                # ใช้คำสั่ง divider มาตรฐานของ streamlit ป้องกันเออเร่อ unsafe_allow_html
+                st.divider()
                 
                 # ----------------------------------------------------
                 # กราฟที่ 2: สารควบคุมคุณภาพ Level 2 (สีแดง)
@@ -107,5 +108,4 @@ with tab6:
     st.header("📋 6. ชุดข้อมูลดิบสำหรับพล็อตแผนภูมิควบคุม")
     load_github_csv("out_6_chart_data.csv")
 with tab7:
-    st.header("🛡️ 7. บันทึกการวิเคราะห์เกณฑ์ Westgard Multi-rule แบบละเอียด")
-    load_github_csv("out_7_lj_multi_rule.csv")
+    st.header("🛡️ 7. บันทึกการวิเคราะห์เกณฑ์
